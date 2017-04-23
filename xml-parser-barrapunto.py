@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 #
@@ -14,15 +14,17 @@
 from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
 import sys
+import os
+import urllib.request
 
 class myContentHandler(ContentHandler):
-
-    body = ""
 
     def __init__ (self):
         self.inItem = False
         self.inContent = False
         self.theContent = ""
+        self.title = ""
+        self.link = ""
 
     def startElement (self, name, attrs):
         if name == 'item':
@@ -38,18 +40,22 @@ class myContentHandler(ContentHandler):
             self.inItem = False
         elif self.inItem:
             if name == 'title':
-                line = "Title: " + self.theContent + "."
-                # To avoid Unicode trouble
-                print line.encode('utf-8') 
-                self.body = self.body + line
+                self.title = "<h3> Title: " + self.theContent + ".</h3>"
+                fichero = open(sys.argv[2], "a")
+                fichero.write(self.title)
+                print(self.title)
                 self.inContent = False
                 self.theContent = ""
+                self.title = ""
             elif name == 'link':
-                print " Link: " + self.theContent + "."
-                link = "<a href=" + self.theContent + "> Enlace: " + self.theContent + "</a>"
-                self.body = self.body + link
+                print(" Link: " + self.theContent + ".")
+                self.link = "<p>Link: <a href=" + self.theContent + ">" + self.theContent + "</a></p>"
+                fichero = open(sys.argv[2], "a")
+                fichero.write(self.link + "\n")
+                print(self.link)
                 self.inContent = False
                 self.theContent = ""
+                self.link = ""
 
     def characters (self, chars):
         if self.inContent:
@@ -57,12 +63,24 @@ class myContentHandler(ContentHandler):
             
 # --- Main prog
 
-if len(sys.argv)<2:
-    print "Usage: python xml-parser-barrapunto.py <document>"
-    print
-    print " <document>: file name of the document to parse"
+if len(sys.argv)<3:
+    print("Usage: python xml-parser-barrapunto.py <document.rss> <document.html>")
+    print()
+    print(" <document.rss>: file name of the document to parse")
+    print(" <document.html>: file name of the html document to save")
     sys.exit(1)
-    
+
+#Creamos un fichero
+fichero = open(sys.argv[1], "w")
+url = "http://barrapunto.com/barrapunto.rss"
+f = urllib.request.urlopen(url)
+body = f.read().decode('utf-8')
+fichero.write(body)
+fichero.close()
+
+if os.path.exists(sys.argv[2]):
+	os.remove(sys.argv[2])
+
 # Load parser and driver
 
 theParser = make_parser()
@@ -73,8 +91,5 @@ theParser.setContentHandler(theHandler)
 
 xmlFile = open(sys.argv[1],"r")
 theParser.parse(xmlFile)
-theHandler.body = theHandler.body 
 
-print "Parse complete"
-#print theHandler.body
-
+print ("Parse complete")
